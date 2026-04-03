@@ -1,0 +1,25 @@
+proxmox_api_url    = "https://YOUR-PROXMOX-IP:8006/api2/json"
+proxmox_api_token  = "terraform@pve!provider=token_id"
+proxmox_node_name  = "node_name"
+vm_template_id     = template_id
+vm_bridge          = "vmbr0"
+snippets_datastore = "local"
+
+kamal_ssh_keys = [
+  "ssh-ed25519 AAAA...kamal-laptop... kamal@laptop",
+  "ssh-ed25519 AAAA...kamal-pc... kamal@pc"
+]
+
+ansible_ssh_key = "ssh-ed25519 AAAA...ansible... ansible@homelab"
+
+vms = {
+  rdbms = {
+    name         = "vm-name"
+    vm_id        = your_vm_id
+    cpu_cores    = 4
+    memory_max   = 4096
+    memory_min   = 2048
+    disk_size    = 500
+    datastore_id = "vmstore"
+  }
+}

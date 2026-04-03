@@ -1,18 +1,17 @@
-locals {
-  base_user_data = templatefile("${path.module}/cloud-init/base-user-data.yaml.tpl", {
-    kamal_ssh_keys  = var.kamal_ssh_keys
-    ansible_ssh_key = var.ansible_ssh_key
-  })
-}
-
 resource "proxmox_virtual_environment_file" "base_user_data" {
+  for_each = var.vms
+
   content_type = "snippets"
   datastore_id = var.snippets_datastore
   node_name    = var.proxmox_node_name
 
   source_raw {
-    file_name = "base-user-data.yaml"
-    data      = local.base_user_data
+    file_name = "${each.key}-user-data.yaml"
+    data = templatefile("${path.module}/cloud-init/base-user-data.yaml.tpl", {
+      kamal_ssh_keys  = var.kamal_ssh_keys
+      ansible_ssh_key = var.ansible_ssh_key
+      hostname        = each.value.name
+    })
   }
 }
 
@@ -54,7 +53,7 @@ resource "proxmox_virtual_environment_vm" "vms" {
 
   initialization {
     datastore_id      = each.value.datastore_id
-    user_data_file_id = proxmox_virtual_environment_file.base_user_data.id
+    user_data_file_id = proxmox_virtual_environment_file.base_user_data[each.key].id
 
     ip_config {
       ipv4 {

@@ -1,4 +1,7 @@
 #cloud-config
+hostname: ${hostname}
+manage_etc_hosts: true
+
 users:
   - name: kamal
     groups: [sudo]

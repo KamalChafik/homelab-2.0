@@ -1,0 +1,25 @@
+## leaving this here for github repo
+proxmox_api_url   = "https://YOUR-PROXMOX-IP:8006/api2/json"
+proxmox_api_token = "terraform@pve!provider=YOUR_SECRET"
+proxmox_node_name = "YOUR_NODE_NAME"
+vm_template_id    = 9000
+vm_bridge         = "vmbr0"
+vm_datastore      = "local-lvm"
+
+vms = {
+  relational_databases = {
+    name      = "relational-databases"
+    vm_id     = 201
+    cpu_cores = 2
+    memory    = 4096
+    disk_size = 40
+  }
+
+  monitoring = {
+    name      = "monitoring"
+    vm_id     = 202
+    cpu_cores = 2
+    memory    = 4096
+    disk_size = 40
+  }
+}

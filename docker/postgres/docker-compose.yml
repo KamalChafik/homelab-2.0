@@ -5,8 +5,6 @@ services:
     restart: unless-stopped
     user: "${PUID}:${PGID}"
     shm_size: "256mb"
-    env_file:
-      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -22,8 +20,6 @@ services:
     container_name: pgadmin
     restart: unless-stopped
     user: "${PUID}:${PGID}"
-    env_file:
-      - .env
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}

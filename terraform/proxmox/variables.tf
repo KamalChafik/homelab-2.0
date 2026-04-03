@@ -1,43 +1,66 @@
 variable "proxmox_api_url" {
   type        = string
-  description = "Proxmox API URL, e.g. https://10.0.0.10:8006/api2/json"
+  description = "Proxmox API URL"
 }
 
 variable "proxmox_api_token" {
   type        = string
-  description = "Proxmox API token in the form user@realm!tokenid=secret"
+  description = "Proxmox API token"
   sensitive   = true
 }
 
 variable "proxmox_node_name" {
   type        = string
-  description = "Default Proxmox node name"
+  description = "Proxmox node name"
 }
 
 variable "vm_template_id" {
   type        = number
-  description = "Template VM ID used for cloning"
+  description = "Cloud-init template VM ID"
 }
 
 variable "vm_bridge" {
   type        = string
-  description = "Default network bridge"
+  description = "Bridge for VM NICs"
   default     = "vmbr0"
 }
 
-variable "vm_datastore" {
+variable "snippets_datastore" {
   type        = string
-  description = "Default datastore for VM : asgard vmstore"
+  description = "Datastore that supports snippets (default to nfs)"
   default     = "vmstore"
+}
+
+variable "kamal_ssh_keys" {
+  type        = list(string)
+  description = "Public SSH keys for kamal user"
+}
+
+variable "ansible_ssh_key" {
+  type        = string
+  description = "Public SSH key for ansible user"
 }
 
 variable "vms" {
   description = "Map of VMs to create"
   type = map(object({
-    name      = string
-    vm_id     = number
-    cpu_cores = number
-    memory    = number
-    disk_size = number
+    name         = string
+    vm_id        = number
+    cpu_cores    = number
+    memory_max   = number
+    memory_min   = number
+    disk_size    = number
+    datastore_id = string
   }))
+}
+
+variable "proxmox_node_address" {
+  type        = string
+  description = "SSH address of the Proxmox node"
+}
+
+variable "proxmox_ssh_username" {
+  type        = string
+  description = "SSH username for the Proxmox node"
+  default     = "root"
 }

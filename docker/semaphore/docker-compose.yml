@@ -1,16 +1,26 @@
----
 services:
   semaphore:
-    image: semaphoreui/semaphore:v2.17.32
+    image: semaphoreui/semaphore:v2.17.33
     container_name: semaphore
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    user: "${PUID}:${PGID}"
     environment:
       SEMAPHORE_DB_DIALECT: ${SEMAPHORE_DB_DIALECT}
+      SEMAPHORE_DB_HOST: ${SEMAPHORE_DB_HOST}
+      SEMAPHORE_DB_PORT: ${SEMAPHORE_DB_PORT}
+      SEMAPHORE_DB_USER: ${SEMAPHORE_DB_USER}
+      SEMAPHORE_DB_PASS: ${SEMAPHORE_DB_PASS}
+      SEMAPHORE_DB: ${SEMAPHORE_DB}
+
       SEMAPHORE_ADMIN: ${SEMAPHORE_ADMIN}
       SEMAPHORE_ADMIN_PASSWORD: ${SEMAPHORE_ADMIN_PASSWORD}
       SEMAPHORE_ADMIN_NAME: ${SEMAPHORE_ADMIN_NAME}
       SEMAPHORE_ADMIN_EMAIL: ${SEMAPHORE_ADMIN_EMAIL}
+
+      SEMAPHORE_ACCESS_KEY_ENCRYPTION: ${SEMAPHORE_ACCESS_KEY_ENCRYPTION}
+      SEMAPHORE_PLAYBOOK_PATH: /tmp/semaphore/
+      TZ: ${TZ}
+    ports:
+      - "3000:3000"
     volumes:
-      - /mnt/apps/semaphore:/etc/semaphore
+      - /mnt/apps/semaphore/data:/var/lib/semaphore

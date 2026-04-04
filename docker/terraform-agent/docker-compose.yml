@@ -1,6 +1,6 @@
 services:
   tfc-agent:
-    image: hashicorp/tfc-agent:1.13.1
+    build: .
     platform: linux/amd64
     container_name: tfc-agent
     restart: unless-stopped
@@ -8,3 +8,6 @@ services:
     environment:
       TFC_AGENT_TOKEN: ${TFC_AGENT_TOKEN}
       TFC_AGENT_NAME: ${TFC_AGENT_NAME}
+
+    volumes:
+      - ${SSH_KEY_PATH}:/tmp/proxmox_automation:ro

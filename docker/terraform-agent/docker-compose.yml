@@ -1,0 +1,11 @@
+services:
+  tfc-agent:
+    image: hashicorp/tfc-agent:1.13.1   # 🔒 pinned version
+    platform: linux/amd64
+    container_name: tfc-agent
+    restart: unless-stopped
+
+    environment:
+      TFC_AGENT_TOKEN: ${TFC_AGENT_TOKEN}
+      TFC_AGENT_NAME: ${TFC_AGENT_NAME}
+      TFC_AGENT_TAGS: ${TFC_AGENT_TAGS}

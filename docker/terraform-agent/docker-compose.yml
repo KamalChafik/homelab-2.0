@@ -1,6 +1,6 @@
 services:
   tfc-agent:
-    image: hashicorp/tfc-agent:1.13.1   # 🔒 pinned version
+    image: hashicorp/tfc-agent:1.13.1
     platform: linux/amd64
     container_name: tfc-agent
     restart: unless-stopped

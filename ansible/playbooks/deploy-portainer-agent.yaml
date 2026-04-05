@@ -1,0 +1,5 @@
+- name: Deploy Portainer agent
+  hosts: all
+  become: true
+  roles:
+    - portainer_agent

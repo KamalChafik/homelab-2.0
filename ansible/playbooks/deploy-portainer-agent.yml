@@ -1,5 +1,30 @@
 - name: Deploy Portainer agent
   hosts: all
   become: true
-  roles:
-    - portainer-agent
+
+  tasks:
+    - name: Ensure Portainer agent directory exists
+      ansible.builtin.file:
+        path: /opt/portainer-agent
+        state: directory
+        mode: "0755"
+
+    - name: Copy Portainer agent compose file
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../docker/portainer-agent/docker-compose.yml"
+        dest: /opt/portainer-agent/docker-compose.yml
+        mode: "0644"
+      register: portainer_agent_compose
+
+    - name: Check if Portainer agent container exists
+      community.docker.docker_container_info:
+        name: portainer-agent
+      register: portainer_agent_info
+      failed_when: false
+
+    - name: Deploy Portainer agent when needed
+      community.docker.docker_compose_v2:
+        project_src: /opt/portainer-agent
+        state: present
+        pull: missing
+      when: portainer_agent_compose.changed or not portainer_agent_info.exists

@@ -1,0 +1,14 @@
+---
+version: 2
+updates:
+  - package-ecosystem: "docker-compose"
+    directories:
+      - "/docker/*"
+    schedule:
+      interval: "daily"
+    labels:
+      - "enhancement"
+      - "docker-compose"
+    commit-message:
+      prefix: "Update(image):"
+      include: "scope"

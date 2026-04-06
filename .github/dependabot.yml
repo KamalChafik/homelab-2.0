@@ -3,7 +3,7 @@ version: 2
 updates:
   - package-ecosystem: "docker-compose"
     directories:
-      - "/portainer/*"
+      - "/docker/*"
     schedule:
       interval: "daily"
     labels:

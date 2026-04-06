@@ -1,6 +1,9 @@
-output "ansible_inventory" {
-  description = "Generated Ansible inventory from Proxmox VMs"
-  value = templatefile("${path.module}/inventory.tmpl", {
-    vms = local.inventory_hosts
-  })
+output "portainer_hosts" {
+  description = "Hosts to register in Portainer"
+  value = {
+    for name, vm in local.inventory_hosts :
+    name => {
+      ip = vm.ip
+    }
+  }
 }

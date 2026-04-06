@@ -216,3 +216,4 @@ terraform.tfvars
 # Ansible
 ansible/inventories/generated/*
 !ansible/inventories/generated/.gitkeep
+portainer_hosts.json

@@ -1,11 +1,6 @@
-output "vm_names" {
-  value = {
-    for key, vm in proxmox_virtual_environment_vm.vms : key => vm.name
-  }
-}
-
-output "vm_ids" {
-  value = {
-    for key, vm in proxmox_virtual_environment_vm.vms : key => vm.vm_id
-  }
+output "ansible_inventory" {
+  description = "Generated Ansible inventory from Proxmox VMs"
+  value = templatefile("${path.module}/inventory.tmpl", {
+    vms = local.inventory_hosts
+  })
 }

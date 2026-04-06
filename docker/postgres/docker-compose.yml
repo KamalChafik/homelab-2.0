@@ -16,7 +16,7 @@ services:
       - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
 
   pgadmin:
-    image: dpage/pgadmin4:9.3
+    image: dpage/pgadmin4:9.14
     container_name: pgadmin
     restart: unless-stopped
     environment:

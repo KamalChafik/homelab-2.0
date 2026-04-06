@@ -1,0 +1,58 @@
+- name: Check agents on VMs
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check Portainer agent container info
+      community.docker.docker_container_info:
+        name: portainer-agent
+      register: portainer_agent_info
+      failed_when: false
+
+    - name: Fail if Portainer agent is not running
+      ansible.builtin.fail:
+        msg: "Portainer agent is not running on {{ inventory_hostname }}"
+      when:
+        - not portainer_agent_info.exists or
+          not portainer_agent_info.container.State.Running
+
+
+- name: Sync Portainer environments
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    portainer_url: "{{ lookup('env', 'PORTAINER_URL') }}"
+    portainer_api_key: "{{ lookup('env', 'PORTAINER_API_KEY') }}"
+
+  tasks:
+    - name: Get existing environments from Portainer
+      ansible.builtin.uri:
+        url: "{{ portainer_url }}/api/endpoints"
+        method: GET
+        headers:
+          X-API-Key: "{{ portainer_api_key }}"
+        validate_certs: false
+        return_content: true
+      register: portainer_envs
+
+    - name: Extract existing environment names
+      ansible.builtin.set_fact:
+        existing_env_names: "{{ portainer_envs.json | map(attribute='Name') | list }}"
+
+    - name: Loop over inventory hosts and create missing environments
+      ansible.builtin.uri:
+        url: "{{ portainer_url }}/api/endpoints"
+        method: POST
+        headers:
+          X-API-Key: "{{ portainer_api_key }}"
+        body_format: form-urlencoded
+        body:
+          Name: "{{ item }}"
+          URL: "{{ hostvars[item].ansible_host }}:9001"
+          EndpointCreationType: 2
+        validate_certs: false
+        status_code: 200
+      loop: "{{ groups['all'] }}"
+      when: item not in existing_env_names

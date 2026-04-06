@@ -66,5 +66,22 @@ resource "proxmox_virtual_environment_vm" "vms" {
     type = "l26"
   }
 
+  agent {
+    enabled = true
+  }
+
   started = true
+}
+
+locals {
+  inventory_hosts = {
+    for name, vm in proxmox_virtual_environment_vm.vms :
+    name => {
+      ip = try(
+        vm.ipv4_addresses[1][0],
+        vm.ipv4_addresses[0][0],
+        ""
+      )
+    }
+  }
 }

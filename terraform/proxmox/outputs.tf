@@ -1,11 +1,9 @@
-output "vm_names" {
+output "portainer_hosts" {
+  description = "Hosts to register in Portainer"
   value = {
-    for key, vm in proxmox_virtual_environment_vm.vms : key => vm.name
-  }
-}
-
-output "vm_ids" {
-  value = {
-    for key, vm in proxmox_virtual_environment_vm.vms : key => vm.vm_id
+    for name, vm in local.inventory_hosts :
+    name => {
+      ip = vm.ip
+    }
   }
 }

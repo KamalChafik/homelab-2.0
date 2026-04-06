@@ -6,7 +6,7 @@
   tasks:
     - name: Check Portainer agent container info
       community.docker.docker_container_info:
-        name: portainer-agent
+        name: portainer_agent
       register: portainer_agent_info
       failed_when: false
 

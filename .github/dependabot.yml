@@ -3,7 +3,7 @@ version: 2
 updates:
   - package-ecosystem: "docker-compose"
     directories:
-      - "/docker/*"
+      - "/portainer/*"
     schedule:
       interval: "daily"
     labels:
@@ -11,4 +11,15 @@ updates:
       - "docker-compose"
     commit-message:
       prefix: "Update(image):"
+      include: "scope"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "enhancement"
+      - "github-action"
+    commit-message:
+      prefix: "Update(action):"
       include: "scope"

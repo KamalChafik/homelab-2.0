@@ -19,9 +19,6 @@ services:
       - /opt/stacks/pihole/etc-pihole:/etc/pihole
       - /opt/stacks/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
 
-    cap_add:
-      - NET_ADMIN
-
     dns:
       - ${UPSTREAM_DNS_1}
       - ${UPSTREAM_DNS_2}

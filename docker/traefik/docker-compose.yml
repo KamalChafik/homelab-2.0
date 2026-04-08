@@ -1,0 +1,17 @@
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    environment:
+      CF_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+
+    volumes:
+      - /mnt/apps/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - /mnt/apps/traefik/dynamic:/etc/traefik/dynamic:ro
+      - /mnt/apps/traefik/acme/acme.json:/etc/traefik/acme/acme.json

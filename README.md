@@ -22,7 +22,7 @@ A fully automated, infrastructure-as-code homelab built on **Proxmox**, provisio
       │  VM: infra  │            │  VM: rdbms   │        │   VM: network    │
       │             │            │              │        │                  │
       │  Portainer  │            │  PostgreSQL  │        │ Twingate (ZTN)   │
-      │  Semaphore  │            │  pgAdmin     │        │ Pi-hole  (🔜)    │
+      │  Semaphore  │            │  pgAdmin     │        │ Pi-hole          │
       │  TFC Agent  │            └──────────────┘        │ Traefik  (🔜)    │
       │  GH Runner  │                                    └──────────────────┘
       └─────────────┘

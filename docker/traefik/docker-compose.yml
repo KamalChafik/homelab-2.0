@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.2
     container_name: traefik
     restart: unless-stopped
 
@@ -9,7 +9,8 @@ services:
       - "443:443"
 
     environment:
-      CF_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      CF_ZONE_API_TOKEN: ${CF_ZONE_API_TOKEN}
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN}
 
     volumes:
       - /mnt/apps/traefik/traefik.yml:/etc/traefik/traefik.yml:ro

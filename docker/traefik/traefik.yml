@@ -27,7 +27,7 @@ providers:
 certificatesResolvers:
   cloudflare:
     acme:
-      email: kamal.ch@live.ca
+      email: my@email.ca
       storage: /etc/traefik/acme/acme.json
       dnsChallenge:
         provider: cloudflare

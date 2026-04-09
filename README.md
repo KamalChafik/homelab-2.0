@@ -1,6 +1,6 @@
 # 🏠 Homelab 2.0
 
-A fully automated, infrastructure-as-code homelab built on **Proxmox**, provisioned with **Terraform**, configured with **Ansible**, and managed through **Portainer** — with GitOps-driven deployments, zero-trust networking, and a growing stack of self-hosted services.
+A fully automated, infrastructure-as-code homelab built on **Proxmox**, provisioned with **Terraform**, configured with **Ansible**, and managed through **Portainer** — with GitOps-driven deployments, secure remote access via Tailscale, and a growing stack of self-hosted services.
 
 ---
 
@@ -21,9 +21,9 @@ A fully automated, infrastructure-as-code homelab built on **Proxmox**, provisio
       ┌─────────────┐            ┌──────────────┐        ┌──────────────────┐
       │  VM: infra  │            │  VM: rdbms   │        │   VM: network    │
       │             │            │              │        │                  │
-      │  Portainer  │            │  PostgreSQL  │        │ Twingate (ZTN)   │
-      │  Semaphore  │            │  pgAdmin     │        │ Pi-hole          │
-      │  TFC Agent  │            └──────────────┘        │ Traefik  (🔜)    │
+      │  Portainer  │            │  PostgreSQL  │        │ Tailscale        │
+      │  Semaphore  │            │  pgAdmin     │        │ Pi-hole (DNS)    │
+      │  TFC Agent  │            └──────────────┘        │ Traefik          │
       │  GH Runner  │                                    └──────────────────┘
       └─────────────┘
 ```
@@ -80,10 +80,10 @@ Every VM is provisioned and configured through a fully automated pipeline — no
 | **Configuration Management** | [Ansible](https://www.ansible.com/) + `community.docker` collection |
 | **Automation UI** | [Semaphore](https://www.semaphoreui.com/) (Ansible / Terraform runs) |
 | **Container Management** | [Portainer](https://www.portainer.io/) (central hub + per-VM agents) |
-| **Zero-Trust Networking** | [Twingate](https://www.twingate.com/) connector |
+| **Remote Access** | [Tailscale](https://tailscale.com/) (on `network` VM, routes DNS through Pi-hole) |
 | **Database** | [PostgreSQL 17](https://www.postgresql.org/) + [pgAdmin 4](https://www.pgadmin.org/) |
-| **DNS / Ad-blocking** | [Pi-hole](https://pi-hole.net/) |
-| **Reverse Proxy** | [Traefik](https://traefik.io/) 🔜 |
+| **DNS / Ad-blocking** | [Pi-hole](https://pi-hole.net/) (internal DNS + ad-blocker) |
+| **Reverse Proxy** | [Traefik v3](https://traefik.io/) (HTTPS via Cloudflare DNS challenge) |
 | **SSO / Identity** | [Authentik](https://goauthentik.io/) 🔜 |
 | **Dependency Updates** | [Dependabot](https://docs.github.com/en/code-security/dependabot) (Docker images + GitHub Actions) |
 
@@ -113,8 +113,8 @@ homelab-2.0/
 │   ├── portainer-agent/                   # Portainer Agent (deployed per-VM by Ansible)
 │   ├── semaphore/                         # Semaphore automation UI
 │   ├── postgres/                          # PostgreSQL + pgAdmin
-│   ├── twingate-agent/                    # Twingate zero-trust connector
 │   ├── terraform-agent/                   # Self-hosted HCP Terraform Cloud agent
+│   ├── traefik/                           # Traefik reverse proxy (Cloudflare DNS challenge)
 │   └── pihole/                            # Pi-hole DNS + ad-blocker
 │
 ├── scripts/
@@ -157,13 +157,13 @@ All VMs are cloned from a single hardened base template (Debian, cloud-init, Doc
 ---
 
 ### VM 3 — `network`
-> Networking and secure access
+> Networking, DNS, and secure remote access
 
 | Service | Purpose |
 |---|---|
-| Twingate Connector | Zero-trust network access (no open ports, no VPN client needed) |
-| Pi-hole | Network-wide DNS resolver and ad-blocker |
-| Traefik | Reverse proxy + automatic TLS 🔜 |
+| Tailscale | Secure remote access (VPN mesh); configured to route DNS through Pi-hole |
+| Pi-hole | Network-wide DNS resolver and ad-blocker; serves internal `.home` / local DNS records |
+| Traefik | Reverse proxy with automatic HTTPS via Cloudflare DNS challenge |
 
 ---
 
@@ -222,11 +222,13 @@ All VMs are cloned from a single hardened base template (Debian, cloud-init, Doc
 - [x] `sync_portainer.py` — auto-registers VMs as Portainer environments
 - [x] `infra` VM deployed (Portainer, Semaphore, TFC Agent)
 - [x] `rdbms` VM deployed (PostgreSQL, pgAdmin)
-- [x] `network` VM deployed (Twingate connector, Pi-hole)
+- [x] `network` VM deployed (Tailscale, Pi-hole, Traefik)
+- [x] Pi-hole internal DNS — local records served to all VMs
+- [x] Tailscale on `network` VM — remote access with DNS routed through Pi-hole
+- [x] Traefik reverse proxy — HTTPS for all services via Cloudflare DNS challenge
 - [x] Dependabot configured for daily Docker image + GitHub Actions updates
 
 ### 🚧 In Progress
-- [ ] Traefik reverse proxy (automatic HTTPS for all services)
 - [ ] Authentik SSO (unified login across all services)
 
 ### 🔜 Next Up

@@ -1,0 +1,37 @@
+services:
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2025.12
+    container_name: authentik-server
+    restart: unless-stopped
+    command: server
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: ${AUTHENTIK_ERROR_REPORTING__ENABLED}
+      AUTHENTIK_POSTGRESQL__HOST: ${AUTHENTIK_POSTGRESQL__HOST}
+      AUTHENTIK_POSTGRESQL__PORT: ${AUTHENTIK_POSTGRESQL__PORT}
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_POSTGRESQL__USER}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRESQL__PASSWORD}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_POSTGRESQL__NAME}
+    ports:
+      - "9000:9000"
+    volumes:
+      - /mnt/apps/authentik/media:/media
+      - /mnt/apps/authentik/custom-templates:/templates
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2025.12
+    container_name: authentik-worker
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: ${AUTHENTIK_ERROR_REPORTING__ENABLED}
+      AUTHENTIK_POSTGRESQL__HOST: ${AUTHENTIK_POSTGRESQL__HOST}
+      AUTHENTIK_POSTGRESQL__PORT: ${AUTHENTIK_POSTGRESQL__PORT}
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_POSTGRESQL__USER}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRESQL__PASSWORD}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_POSTGRESQL__NAME}
+    volumes:
+      - /mnt/apps/authentik/media:/media
+      - /mnt/apps/authentik/certs:/certs
+      - /mnt/apps/authentik/custom-templates:/templates

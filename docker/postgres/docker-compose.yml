@@ -13,7 +13,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
+      - /mnt/apps/postgres/data:/var/lib/postgresql/data
 
   pgadmin:
     image: dpage/pgadmin4:9.3
@@ -25,6 +25,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ${PGADMIN_DATA_PATH}:/var/lib/pgadmin
+      - /mnt/apps/pgadmin/data:/var/lib/pgadmin
+      - /mnt/apps/pgadmin/config_local.py:/pgadmin4/config_local.py:ro
     depends_on:
       - postgres

@@ -35,3 +35,4 @@ services:
       - /mnt/apps/authentik/media:/media
       - /mnt/apps/authentik/certs:/certs
       - /mnt/apps/authentik/custom-templates:/templates
+      

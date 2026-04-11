@@ -9,98 +9,100 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 > A reproducible, IaC-driven homelab built on Proxmox and TrueNAS, extended with a GPU workstation node for AI workloads.  
-> Fully automated with Terraform + Ansible, secured with Authentik, and accessed through Tailscale.
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Compute Nodes](#compute-nodes)
-- [Network & Access](#network--access)
-- [Authentication & SSO](#authentication--sso)
-- [Storage](#storage)
-- [Automation Pipeline](#automation-pipeline)
-- [Tech Stack](#tech-stack)
-- [Repository Structure](#repository-structure)
-- [Roadmap](#roadmap)
-- [Getting Started](#getting-started)
+> Fully automated with Terraform + Ansible, secured with Authentik, and accessed through a private Tailscale mesh.
 
 ---
 
 ## Overview
 
-This homelab focuses on:
+This homelab is built around a few core ideas:
 
-- Reproducible infrastructure
+- Reproducible infrastructure (Terraform + Ansible)
 - Separation of compute and storage
 - Secure private access (no public exposure)
-- Centralized authentication
+- Centralized authentication (SSO)
 - Hybrid compute (VM cluster + GPU workstation)
 
 ---
 
 ## Architecture
 
+### Physical Nodes
+
+The system is composed of three independent machines:
+
+- **TrueNAS** → storage node  
+- **Proxmox** → virtualization / services  
+- **Workstation PC** → GPU compute node  
+
+All nodes (plus the laptop) are connected through Tailscale.
+
+---
+
+### Topology
+
 ```mermaid
 flowchart LR
-    TN[TrueNAS]
-    PX[Proxmox VE]
-    PC[GPU Workstation]
+    Laptop[💻 Laptop]
+    PX[🖥 Proxmox]
+    TN[🗄 TrueNAS]
+    PC[⚡ Workstation GPU]
 
-    subgraph VMS[VMs]
-        INFRA[infra]
-        RDBMS[rdbms]
-        NET[network]
-    end
+    Laptop <-->|Tailscale| PX
+    Laptop <-->|Tailscale| PC
+    PX <-->|Tailscale| PC
 
-    TN <-- NFS/SMB --> PX
-    PX --> INFRA
-    PX --> RDBMS
-    PX --> NET
-
-    PC -->|Tailscale| PX
+    PX -->|NFS| TN
 ```
 
 ---
 
-## Compute Nodes
+## Compute Model
 
-### Proxmox Cluster
+### Proxmox (VM Layer)
 
-- Hosts all virtual machines
+- Runs all infrastructure services
 - Fully provisioned via Terraform
 - Configured via Ansible
 
-### GPU Workstation
+Main VMs:
+- `infra` → Portainer, Authentik, Semaphore
+- `rdbms` → PostgreSQL, pgAdmin
+- `network` → Traefik, Pi-hole, Tailscale
+
+---
+
+### Workstation (GPU Node)
 
 - Connected via Tailscale
 - Runs:
-  - **OpenSSH** → remote execution (Jupyter, training, scripts)
-  - **Ollama** → local LLM inference
+  - **OpenSSH** → remote execution (Jupyter, training)
+  - **Ollama** → LLM inference
 
 Used for:
 - model training / fine-tuning
 - heavy compute workloads
-- offloading AI tasks from the cluster
+- offloading AI tasks from Proxmox
+
+---
 
 ### AI Flow
 
 ```mermaid
 flowchart LR
-    User[User] --> OpenWebUI
+    User --> OpenWebUI
     OpenWebUI --> Ollama
-    Ollama --> GPU[GPU Workstation]
+    Ollama --> GPU[Workstation GPU]
 ```
 
 ---
 
 ## Network & Access
 
-- All services are accessed through **Tailscale**
-- **Pi-hole** handles DNS
-- **Traefik** routes traffic internally
+- Private access only via Tailscale
+- No public ports exposed
+- Pi-hole handles DNS
+- Traefik routes internal traffic
 
 ```mermaid
 flowchart LR
@@ -109,8 +111,6 @@ flowchart LR
     PiHole --> Traefik
     Traefik --> Services
 ```
-
-No services are exposed publicly.
 
 ---
 
@@ -123,7 +123,7 @@ Managed by **Authentik**
 - Portainer → OIDC
 - pgAdmin → OAuth2
 - Proxmox → OIDC
-- Traefik Dashboard → ForwardAuth
+- Traefik → ForwardAuth
 
 ```mermaid
 flowchart LR
@@ -135,48 +135,85 @@ flowchart LR
 
 Features:
 - OIDC / OAuth2
-- Proxy authentication
 - MFA
 - Group-based access
+- Proxy authentication
 
 ---
 
-## Storage
+## Storage Layout
 
-Storage is centralized on TrueNAS and split across two vdevs.
+TrueNAS is the storage backbone of the homelab.
 
-### Active Storage — `asgard`
+Storage is split across two vdevs:
 
-| Dataset | Access | Purpose |
-|--------|------|--------|
+- **`asgard`** → active workloads and shared data  
+- **`valhalla`** → backup and recovery  
+
+---
+
+### `asgard` — Active Data
+
+| Dataset | Protocol | Purpose |
+|---|---|---|
 | vmstore | NFS | VM disks |
 | apps/docker | NFS | App persistence |
 | media | SMB + NFS | Shared + processed data |
-| mimir | SMB only | User workspace |
+| mimir | SMB | User workspace |
 
-### Backup Storage — `valhalla`
+#### Details
+
+- **vmstore** → Proxmox datastore (VM disks)  
+- **apps/docker** → persistent data for containers  
+- **media** → shared between users and services  
+- **mimir** → user-only storage (isolated from services)  
+
+---
+
+### `valhalla` — Backup Layer
 
 | Dataset | Purpose |
-|--------|--------|
-| backup | Backups |
-| replicas | Replication |
+|---|---|
+| backup | General backups |
+| replicas | Dataset replication |
 | pbs | Future Proxmox Backup Server |
 
-### Storage Flow
+---
+
+### Storage Access Model
+
+Storage access is split by role:
+
+- **NFS → infrastructure & services**
+- **SMB → user access**
+
+---
+
+### NFS Architecture
 
 ```mermaid
-flowchart TB
-    TrueNAS --> VMStore
-    TrueNAS --> Apps
-    TrueNAS --> Media
-    TrueNAS --> Mimir
+flowchart LR
+    PX[Proxmox]
+    VMs[VMs]
+    TN[TrueNAS]
 
-    Proxmox --> VMStore
-    VMs --> Apps
-    VMs --> Media
+    PX -->|vmstore| TN
+    VMs -->|apps/docker| TN
+    VMs -->|media| TN
+```
 
-    Users --> Media
-    Users --> Mimir
+---
+
+### SMB Architecture
+
+```mermaid
+flowchart LR
+    Laptop[💻 Laptop]
+    PC[⚡ Workstation]
+    TN[TrueNAS]
+
+    Laptop -->|media, mimir| TN
+    PC -->|media, mimir| TN
 ```
 
 ---
@@ -186,8 +223,8 @@ flowchart TB
 ```mermaid
 flowchart LR
     GitHub --> TerraformCloud
-    TerraformCloud --> TFC_Agent
-    TFC_Agent --> Terraform
+    TerraformCloud --> Agent
+    Agent --> Terraform
     Terraform --> Proxmox
     Terraform --> Inventory
     Inventory --> Ansible
@@ -197,10 +234,10 @@ flowchart LR
 
 ### Flow
 
-1. Push to GitHub
-2. Terraform provisions VMs
-3. Ansible configures them
-4. Portainer manages workloads
+1. Push to GitHub  
+2. Terraform provisions VMs  
+3. Ansible configures them  
+4. Portainer deploys services  
 
 ---
 
@@ -227,25 +264,32 @@ flowchart LR
 
 ```text
 homelab-2.0/
-├── terraform/
-├── ansible/
-├── docker/
-├── scripts/
-├── requirements.yml
-└── .github/
+├── terraform/        # Infrastructure provisioning (VMs, cloud-init)
+├── ansible/          # Configuration management
+├── docker/           # Application stacks (Portainer-managed)
+├── scripts/          # Automation helpers
+├── requirements.yml  # Ansible dependencies
+└── .github/          # CI/CD and updates (Dependabot)
 ```
+
+### Explanation
+
+- **terraform/** → creates infrastructure  
+- **ansible/** → configures machines  
+- **docker/** → runs services  
+- **scripts/** → automation glue  
 
 ---
 
 ## Roadmap
 
 ### Done
-- Proxmox setup
-- TrueNAS setup
-- Terraform pipeline
+- Proxmox + TrueNAS setup
+- Terraform provisioning
 - Ansible automation
 - Authentik SSO
-- Tailscale networking
+- Tailscale mesh
+- GPU workstation integration
 
 ### In Progress
 - Authentik blueprints
@@ -260,7 +304,7 @@ homelab-2.0/
 
 ## Getting Started
 
-### 1. Terraform
+### Terraform
 
 ```bash
 cd terraform/proxmox
@@ -268,7 +312,7 @@ terraform init
 terraform apply
 ```
 
-### 2. Ansible
+### Ansible
 
 ```bash
 ansible-galaxy install -r requirements.yml

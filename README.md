@@ -1,8 +1,16 @@
 # 🏠 Homelab 2.0
 
-A production-grade, fully automated homelab running on **Proxmox**, built entirely with Infrastructure-as-Code — provisioned by **Terraform**, configured by **Ansible**, orchestrated by **Portainer**, secured by **Tailscale + Authentik**, and exposed through **Traefik** with automatic TLS via **Cloudflare DNS challenge**.
+[![Infrastructure: Terraform](https://img.shields.io/badge/Infrastructure-Terraform-7B42BC?logo=terraform&logoColor=white)](https://developer.hashicorp.com/terraform)
+[![Configuration: Ansible](https://img.shields.io/badge/Configuration-Ansible-EE0000?logo=ansible&logoColor=white)](https://www.ansible.com/)
+[![Orchestration: Portainer](https://img.shields.io/badge/Orchestration-Portainer-13BEF9?logo=portainer&logoColor=white)](https://www.portainer.io/)
+[![Identity: Authentik](https://img.shields.io/badge/Identity-Authentik-FD4B2D?logo=authentik&logoColor=white)](https://goauthentik.io/)
+[![Proxy: Traefik](https://img.shields.io/badge/Proxy-Traefik_v3-24A1C1?logo=traefikproxy&logoColor=white)](https://traefik.io/)
+[![VPN: Tailscale](https://img.shields.io/badge/VPN-Tailscale-246FDB?logo=tailscale&logoColor=white)](https://tailscale.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Every VM is reproducible, every secret is injected at runtime, and every deployment is GitOps-driven — no snowflakes, no manual SSH sessions.
+> A production-grade, fully automated homelab running on **Proxmox**, built entirely with Infrastructure-as-Code — provisioned by **Terraform**, configured by **Ansible**, orchestrated by **Portainer**, secured by **Tailscale + Authentik**, and exposed through **Traefik** with automatic TLS via **Cloudflare DNS challenge**.
+>
+> Every VM is reproducible, every secret is injected at runtime, and every deployment is GitOps-driven — no snowflakes, no manual SSH sessions.
 
 ---
 
@@ -33,14 +41,15 @@ Every VM is reproducible, every secret is injected at runtime, and every deploym
   ┌──────────────────────────────────────────────────────────────────────┐
   │  VM: infra                      VM: rdbms                            │
   │  ─────────────────────          ──────────────                       │
-  │  • Portainer (hub)              • PostgreSQL 17                      │
-  │  • Semaphore (GitOps UI)        • pgAdmin 4                          │
+  │  • Portainer (hub) ✅ SSO       • PostgreSQL 17                      │
+  │  • Semaphore (GitOps UI)        • pgAdmin 4      ✅ SSO              │
   │  • TFC Agent (Terraform)                                             │
   │  • GitHub Runner                VM: network                          │
   │  • Authentik (SSO/IdP) ✅       ──────────────                       │
   │                                 • Pi-hole (DNS + ad-block)           │
-  │                                 • Traefik (reverse proxy + TLS) ✅   │
-  │                                 • Tailscale (overlay VPN)            │
+  │  VM: proxmox (hypervisor)       • Traefik (reverse proxy) ✅ SSO    │
+  │  ────────────────────────       • Tailscale (overlay VPN)            │
+  │  • Proxmox VE ✅ SSO                                                 │
   └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -125,30 +134,79 @@ Every VM is reproducible, every secret is injected at runtime, and every deploym
 
 ## 🔑 Authentication & SSO
 
+All services are protected by **Authentik** — a self-hosted Identity Provider (IdP) running on the `infra` VM. No service is exposed without authentication.
+
+### SSO Architecture
+
 ```
-  Browser → service.home.lan
-               │
-               ▼
-        Traefik (ForwardAuth middleware)
-               │
-               │  Unauthenticated? Redirect to:
-               ▼
-        authentik.home.lan  (Authentik IdP)
-               │
-               │  Login / MFA
-               ▼
-        Authentik issues session token
-               │
-               ▼
-        Traefik forwards request to upstream service
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                        AUTHENTIK IdP                                │
+  │                    (authentik.home.lan)                             │
+  │                                                                     │
+  │   ┌─────────────────────────────────────────────────────────────┐  │
+  │   │  Providers                  Outposts                        │  │
+  │   │  ─────────────────────      ────────────────────────────    │  │
+  │   │  • OAuth2 / OpenID          • Proxy Outpost                 │  │
+  │   │    (Portainer, pgAdmin,       → Traefik ForwardAuth         │  │
+  │   │     Proxmox)                  → Traefik Dashboard           │  │
+  │   │  • LDAP Provider            • RADIUS (future)               │  │
+  │   │    → TrueNAS (WIP)                                          │  │
+  │   └─────────────────────────────────────────────────────────────┘  │
+  └─────────────────────────────────────────────────────────────────────┘
+               │                          │
+    ┌──────────┴──────────┐    ┌──────────┴──────────────────────┐
+    │  Native OIDC / OAuth │    │  Proxy Outpost (ForwardAuth)    │
+    │  ─────────────────── │    │  ─────────────────────────────  │
+    │  Portainer   ✅ Live  │    │  Traefik Dashboard  ✅ Live     │
+    │  pgAdmin 4   ✅ Live  │    │  (any app without native SSO)  │
+    │  Proxmox VE  ✅ Live  │    └─────────────────────────────── ┘
+    └──────────────────────┘
 ```
 
-**Authentik** acts as the central Identity Provider (IdP) for the entire homelab:
-- **Forward Auth proxy** — Traefik middleware checks every request against Authentik before proxying
-- **OIDC / SAML / LDAP** — services that support native SSO get full OIDC integration
-- **MFA enforcement** — TOTP, WebAuthn (hardware keys), and push notifications
-- **Application groups** — fine-grained access control per service
-- **Outpost** — lightweight proxy outpost deployed alongside Traefik for zero-latency auth checks
+### Integrated Services
+
+| Service | Integration Method | Status | Notes |
+|---|---|---|---|
+| **Portainer** | OAuth2 / OpenID Connect | ✅ Live | Native OIDC; groups synced from Authentik |
+| **pgAdmin 4** | OAuth2 | ✅ Live | OAuth2 redirect flow; role mapped from Authentik groups |
+| **Proxmox VE** | OpenID Connect | ✅ Live | Realm configured on PVE side; Authentik as OIDC provider |
+| **Traefik Dashboard** | Proxy Outpost + ForwardAuth | ✅ Live | No native SSO — Authentik proxy outpost in front of Traefik API |
+| **TrueNAS** | LDAP | 🚧 In Progress | Authentik LDAP outpost → TrueNAS directory service |
+| **Semaphore** | OIDC | 🔜 Planned | Native OIDC support |
+
+### Authentication Flow
+
+```
+  Browser  →  service.home.lan
+                    │
+                    ▼
+           ┌─────────────────┐
+           │  Traefik v3     │
+           │  (ForwardAuth   │
+           │   middleware)   │
+           └────────┬────────┘
+                    │
+          ┌─────────┴──────────────────────────────────┐
+          │  Native OIDC app?           Proxy Outpost?  │
+          ▼                             ▼               │
+   Redirect to                  Authentik checks        │
+   Authentik /authorize         session cookie          │
+          │                             │               │
+          │  OAuth2 code exchange       │  Valid?       │
+          ▼                             ▼               │
+   Service handles             Forward to upstream      │
+   token locally               (transparent to user)   │
+                                                        │
+          └──────────── MFA enforced on all paths ──────┘
+```
+
+**Authentik** features in use:
+- **OIDC / OAuth2 providers** — native SSO for Portainer, pgAdmin, Proxmox
+- **Proxy Outpost** — ForwardAuth middleware for services without native SSO (Traefik dashboard)
+- **LDAP Outpost** — directory service integration for TrueNAS *(in progress)*
+- **MFA enforcement** — TOTP for all admin accounts
+- **Application groups** — per-service access control via Authentik groups
+- **Blueprints** — declarative provider/application configuration (version-controlled)
 
 ---
 
@@ -242,7 +300,7 @@ Every VM is provisioned and configured through a fully automated pipeline — no
 | **Overlay VPN** | [Tailscale](https://tailscale.com/) — WireGuard mesh, split DNS, MagicDNS |
 | **DNS / Ad-blocking** | [Pi-hole](https://pi-hole.net/) — local resolver, ad-block, custom records |
 | **Reverse Proxy + TLS** | [Traefik v3](https://traefik.io/) — automatic HTTPS via Cloudflare DNS-01 |
-| **SSO / Identity Provider** | [Authentik](https://goauthentik.io/) — OIDC, ForwardAuth, MFA |
+| **SSO / Identity Provider** | [Authentik](https://goauthentik.io/) — OIDC, OAuth2, ForwardAuth, LDAP, MFA |
 | **Database** | [PostgreSQL 17](https://www.postgresql.org/) + [pgAdmin 4](https://www.pgadmin.org/) |
 | **Secret Injection** | Environment variables via Portainer stacks (no secrets in Git) |
 | **Dependency Updates** | [Dependabot](https://docs.github.com/en/code-security/dependabot) — daily Docker image + Actions pins |
@@ -296,34 +354,50 @@ All VMs are cloned from a single hardened base template (Debian, cloud-init, Doc
 ### VM 1 — `infra`
 > Core control plane of the homelab
 
-| Service | Status | Purpose |
-|---|---|---|
-| Portainer | ✅ Live | Central Docker management UI, aggregates all VM environments |
-| Semaphore | ✅ Live | Web UI for running Ansible playbooks and Terraform plans |
-| TFC Agent | ✅ Live | Self-hosted Terraform Cloud agent (runs plans inside the homelab) |
-| GitHub Runner | ✅ Live | Self-hosted GitHub Actions runner |
-| Authentik | ✅ Live | SSO + Identity Provider (OIDC, ForwardAuth, MFA) |
+| Service | Status | SSO | Purpose |
+|---|---|---|---|
+| Portainer | ✅ Live | ✅ OIDC | Central Docker management UI, aggregates all VM environments |
+| Semaphore | ✅ Live | 🔜 Planned | Web UI for running Ansible playbooks and Terraform plans |
+| TFC Agent | ✅ Live | N/A | Self-hosted Terraform Cloud agent (runs plans inside the homelab) |
+| GitHub Runner | ✅ Live | N/A | Self-hosted GitHub Actions runner |
+| Authentik | ✅ Live | N/A (IdP itself) | SSO + Identity Provider (OIDC, ForwardAuth, LDAP, MFA) |
 
 ---
 
 ### VM 2 — `rdbms`
 > Database layer — persistent storage backend for all services
 
-| Service | Status | Purpose |
-|---|---|---|
-| PostgreSQL 17 | ✅ Live | Primary relational database (shared by Authentik, Semaphore, etc.) |
-| pgAdmin 4 | ✅ Live | Web-based PostgreSQL management |
+| Service | Status | SSO | Purpose |
+|---|---|---|---|
+| PostgreSQL 17 | ✅ Live | N/A | Primary relational database (shared by Authentik, Semaphore, etc.) |
+| pgAdmin 4 | ✅ Live | ✅ OAuth2 | Web-based PostgreSQL management |
 
 ---
 
 ### VM 3 — `network`
 > Networking, DNS, and HTTPS ingress
 
-| Service | Status | Purpose |
-|---|---|---|
-| Pi-hole | ✅ Live | Network-wide DNS resolver, ad-blocker, and custom local records |
-| Traefik v3 | ✅ Live | Reverse proxy with automatic TLS (Cloudflare DNS-01 challenge) |
-| Tailscale | ✅ Live | WireGuard overlay mesh — all internal traffic stays encrypted |
+| Service | Status | SSO | Purpose |
+|---|---|---|---|
+| Pi-hole | ✅ Live | 🔜 Planned | Network-wide DNS resolver, ad-blocker, and custom local records |
+| Traefik v3 | ✅ Live | ✅ Proxy Outpost | Reverse proxy with automatic TLS (Cloudflare DNS-01 challenge) |
+| Tailscale | ✅ Live | N/A | WireGuard overlay mesh — all internal traffic stays encrypted |
+
+---
+
+### Proxmox VE (Hypervisor)
+
+| Service | Status | SSO | Purpose |
+|---|---|---|---|
+| Proxmox VE | ✅ Live | ✅ OpenID Connect | Bare-metal hypervisor hosting all VMs |
+
+---
+
+### TrueNAS (Storage Server)
+
+| Service | Status | SSO | Purpose |
+|---|---|---|---|
+| TrueNAS | ✅ Live | 🚧 LDAP (WIP) | NFS + SMB storage server; LDAP auth via Authentik in progress |
 
 ---
 
@@ -385,14 +459,20 @@ All VMs are cloned from a single hardened base template (Debian, cloud-init, Doc
 - [x] Authentik deployed — SSO Identity Provider live
 - [x] Migrated from Twingate to Tailscale (split DNS + Pi-hole integration)
 - [x] Dependabot configured for daily Docker image + GitHub Actions updates
+- [x] **pgAdmin 4** — OAuth2 SSO via Authentik
+- [x] **Proxmox VE** — OpenID Connect SSO via Authentik
+- [x] **Portainer** — OpenID Connect SSO via Authentik
+- [x] **Traefik Dashboard** — Proxy Outpost + ForwardAuth middleware via Authentik
 
 ### 🚧 In Progress
-- [ ] Authentik SSO — ForwardAuth middleware configuration in Traefik
-- [ ] OIDC integrations — Portainer, Semaphore, pgAdmin native SSO
+- [ ] **TrueNAS** — LDAP directory service integration via Authentik LDAP outpost
+- [ ] Authentik Blueprints — version-control all provider/application configs declaratively
 
 ### 🔜 Next Up
+- [ ] Semaphore — OIDC SSO via Authentik
+- [ ] Pi-hole — SSO or basic auth via Authentik proxy outpost
 - [ ] `home-automation` VM — Home Assistant
-- [ ] `media` VM — Arr stack
+- [ ] `media` VM — Arr stack (Sonarr, Radarr, Prowlarr)
 - [ ] `tools` VM — Homepage, Vaultwarden, SearXNG, ntfy
 - [ ] `monitoring` VM — Prometheus, Grafana, Loki, Uptime Kuma
 - [ ] `ai` VM — Ollama + Open WebUI

@@ -148,9 +148,9 @@ All services are protected by **Authentik** — a self-hosted Identity Provider 
   │   │  ─────────────────────      ────────────────────────────    │  │
   │   │  • OAuth2 / OpenID          • Proxy Outpost                 │  │
   │   │    (Portainer, pgAdmin,       → Traefik ForwardAuth         │  │
-  │   │     Proxmox)                  → Traefik Dashboard           │  │
-  │   │  • LDAP Provider            • RADIUS (future)               │  │
-  │   │    → TrueNAS (WIP)                                          │  │
+  │   │     Proxmox, Semaphore🔜)     → Traefik Dashboard           │  │
+  │   │  • LDAP Provider            • LDAP Outpost (🔜 next)        │  │
+  │   │    → TrueNAS (🔜 next)         → TrueNAS LDAP auth          │  │
   │   └─────────────────────────────────────────────────────────────┘  │
   └─────────────────────────────────────────────────────────────────────┘
                │                          │
@@ -171,8 +171,8 @@ All services are protected by **Authentik** — a self-hosted Identity Provider 
 | **pgAdmin 4** | OAuth2 | ✅ Live | OAuth2 redirect flow; role mapped from Authentik groups |
 | **Proxmox VE** | OpenID Connect | ✅ Live | Realm configured on PVE side; Authentik as OIDC provider |
 | **Traefik Dashboard** | Proxy Outpost + ForwardAuth | ✅ Live | No native SSO — Authentik proxy outpost in front of Traefik API |
-| **TrueNAS** | LDAP | 🚧 In Progress | Authentik LDAP outpost → TrueNAS directory service |
-| **Semaphore** | OIDC | 🔜 Planned | Native OIDC support |
+| **TrueNAS** | LDAP | 🔜 Next | Authentik LDAP outpost (to be deployed) → TrueNAS directory service |
+| **Semaphore** | OAuth2 / OIDC | 🔜 Next | Native OAuth2/OIDC support; after LDAP outpost |
 
 ### Authentication Flow
 
@@ -203,7 +203,7 @@ All services are protected by **Authentik** — a self-hosted Identity Provider 
 **Authentik** features in use:
 - **OIDC / OAuth2 providers** — native SSO for Portainer, pgAdmin, Proxmox
 - **Proxy Outpost** — ForwardAuth middleware for services without native SSO (Traefik dashboard)
-- **LDAP Outpost** — directory service integration for TrueNAS *(in progress)*
+- **LDAP Outpost** — directory service integration for TrueNAS *(next to deploy)*
 - **MFA enforcement** — TOTP for all admin accounts
 - **Application groups** — per-service access control via Authentik groups
 - **Blueprints** — declarative provider/application configuration (version-controlled)
@@ -357,7 +357,7 @@ All VMs are cloned from a single hardened base template (Debian, cloud-init, Doc
 | Service | Status | SSO | Purpose |
 |---|---|---|---|
 | Portainer | ✅ Live | ✅ OIDC | Central Docker management UI, aggregates all VM environments |
-| Semaphore | ✅ Live | 🔜 Planned | Web UI for running Ansible playbooks and Terraform plans |
+| Semaphore | ✅ Live | 🔜 OAuth/OIDC | Web UI for running Ansible playbooks and Terraform plans |
 | TFC Agent | ✅ Live | N/A | Self-hosted Terraform Cloud agent (runs plans inside the homelab) |
 | GitHub Runner | ✅ Live | N/A | Self-hosted GitHub Actions runner |
 | Authentik | ✅ Live | N/A (IdP itself) | SSO + Identity Provider (OIDC, ForwardAuth, LDAP, MFA) |
@@ -465,11 +465,12 @@ All VMs are cloned from a single hardened base template (Debian, cloud-init, Doc
 - [x] **Traefik Dashboard** — Proxy Outpost + ForwardAuth middleware via Authentik
 
 ### 🚧 In Progress
-- [ ] **TrueNAS** — LDAP directory service integration via Authentik LDAP outpost
 - [ ] Authentik Blueprints — version-control all provider/application configs declaratively
 
 ### 🔜 Next Up
-- [ ] Semaphore — OIDC SSO via Authentik
+- [ ] Deploy **Authentik LDAP Outpost** — prerequisite for TrueNAS and other LDAP-based integrations
+- [ ] **TrueNAS** — LDAP directory service SSO via Authentik LDAP outpost
+- [ ] **Semaphore** — OAuth2 / OIDC SSO via Authentik
 - [ ] Pi-hole — SSO or basic auth via Authentik proxy outpost
 - [ ] `home-automation` VM — Home Assistant
 - [ ] `media` VM — Arr stack (Sonarr, Radarr, Prowlarr)

@@ -306,8 +306,12 @@ homelab-2.0/
 
 ### Terraform
 
+Before running `terraform apply`, provide the required Terraform variables. The simplest option is to copy `terraform.tfvars.example` to `terraform.tfvars` and fill in values such as your Proxmox API URL/token, SSH keys, VM template ID, and VM map. If you prefer, you can also pass variables via standard Terraform CLI flags or environment variables instead.
+
 ```bash
 cd terraform/proxmox
+cp terraform.tfvars.example terraform.tfvars
+# edit terraform.tfvars and set the required values
 terraform init
 terraform apply
 ```

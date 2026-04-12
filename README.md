@@ -327,4 +327,4 @@ ansible-playbook -i inventory.yml deploy-portainer-agent.yml
 
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -318,9 +318,23 @@ terraform apply
 
 ### Ansible
 
+The inventory file is not checked in. After running `terraform apply`, generate `ansible/inventory.yml` using the provided template as a reference and the VM IPs from `terraform output`:
+
+```bash
+# View VM IPs from Terraform
+cd terraform/proxmox
+terraform output portainer_hosts
+
+# Create the inventory file (use terraform/proxmox/inventory.tmpl as a reference)
+cp terraform/proxmox/inventory.tmpl ansible/inventory.yml
+# edit ansible/inventory.yml and set the ansible_host values to the VM IPs above
+```
+
+Then install dependencies and run the playbook:
+
 ```bash
 ansible-galaxy install -r requirements.yml
-ansible-playbook -i inventory.yml deploy-portainer-agent.yml
+ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy-portainer-agent.yml
 ```
 
 ---

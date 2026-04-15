@@ -3,6 +3,19 @@
   become: true
 
   tasks:
+    - name: Check Portainer agent path
+      ansible.builtin.stat:
+        path: /opt/portainer-agent
+      register: portainer_agent_path
+
+    - name: Remove invalid Portainer agent path
+      ansible.builtin.file:
+        path: /opt/portainer-agent
+        state: absent
+      when:
+        - portainer_agent_path.stat.exists
+        - not portainer_agent_path.stat.isdir
+
     - name: Ensure Portainer agent directory exists
       ansible.builtin.file:
         path: /opt/portainer-agent
@@ -18,7 +31,7 @@
 
     - name: Check if Portainer agent container exists
       community.docker.docker_container_info:
-        name: portainer-agent
+        name: portainer_agent
       register: portainer_agent_info
       failed_when: false
 

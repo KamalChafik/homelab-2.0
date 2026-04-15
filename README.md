@@ -70,6 +70,7 @@ Main VMs:
 - `rdbms` → PostgreSQL, pgAdmin
 - `network` → Traefik, Pi-hole, Tailscale
 - `home-assistant` → Home Assistant
+- `tools` → SearXNG, OpenWebUI, Vaultwarden *(planned)*
 
 ---
 
@@ -104,6 +105,7 @@ flowchart LR
 - No public ports exposed
 - Pi-hole handles DNS
 - Traefik routes internal traffic
+- SSL certificates and custom hostnames for TrueNAS and Proxmox
 
 ```mermaid
 flowchart LR
@@ -126,6 +128,7 @@ Managed by **Authentik**
 - Proxmox → OIDC
 - Traefik → ForwardAuth
 - Pi-hole → ForwardAuth
+- Home Assistant → Proxy Auth
 
 ```mermaid
 flowchart LR
@@ -260,6 +263,8 @@ flowchart LR
 | Database | PostgreSQL |
 | AI | Ollama + OpenWebUI |
 | Home Automation | Home Assistant |
+| Search | SearXNG |
+| Secrets | Vaultwarden |
 
 ---
 
@@ -295,15 +300,17 @@ homelab-2.0/
 - GPU workstation integration
 - Pi-hole SSO (ForwardAuth)
 - Proxmox SSO (OpenID)
+- Home Assistant VM deployment
+- Home Assistant SSO (Proxy Auth)
+- SSL & hostnames for TrueNAS and Proxmox
 
 ### In Progress
-- Home Assistant VM deployment
+- Tools VM deployment (SearXNG, OpenWebUI, Vaultwarden)
 - Authentik blueprints
 
 ### Next
 - LDAP integration
 - Monitoring stack
-- AI VM (OpenWebUI)
 - Proxmox Backup Server
 
 ---

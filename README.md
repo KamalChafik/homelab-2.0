@@ -69,6 +69,7 @@ Main VMs:
 - `infra` → Portainer, Authentik, Semaphore
 - `rdbms` → PostgreSQL, pgAdmin
 - `network` → Traefik, Pi-hole, Tailscale
+- `home-assistant` → Home Assistant
 
 ---
 
@@ -124,6 +125,7 @@ Managed by **Authentik**
 - pgAdmin → OAuth2
 - Proxmox → OIDC
 - Traefik → ForwardAuth
+- Pi-hole → ForwardAuth
 
 ```mermaid
 flowchart LR
@@ -257,6 +259,7 @@ flowchart LR
 | VPN | Tailscale |
 | Database | PostgreSQL |
 | AI | Ollama + OpenWebUI |
+| Home Automation | Home Assistant |
 
 ---
 
@@ -290,8 +293,11 @@ homelab-2.0/
 - Authentik SSO
 - Tailscale mesh
 - GPU workstation integration
+- Pi-hole SSO (ForwardAuth)
+- Proxmox SSO (OpenID)
 
 ### In Progress
+- Home Assistant VM deployment
 - Authentik blueprints
 
 ### Next

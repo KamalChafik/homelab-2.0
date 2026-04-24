@@ -8,4 +8,4 @@ services:
     volumes:
       - /mnt/apps/openwebui:/app/backend/data
     environment:
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}

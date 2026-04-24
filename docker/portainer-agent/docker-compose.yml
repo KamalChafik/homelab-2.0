@@ -1,4 +1,3 @@
----
 services:
   portainer_agent:
     image: portainer/agent:2.39.1

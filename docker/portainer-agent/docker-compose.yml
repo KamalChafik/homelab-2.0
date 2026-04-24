@@ -1,8 +1,7 @@
----
 services:
   portainer_agent:
     image: portainer/agent:2.39.1
-    container_name: portainer-agent
+    container_name: portainer_agent
     restart: unless-stopped
     ports:
       - "9001:9001"

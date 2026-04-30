@@ -1,6 +1,6 @@
 services:
   semaphore:
-    image: semaphoreui/semaphore:v2.17.38
+    image: semaphoreui/semaphore:v2.17.39
     container_name: semaphore
     restart: unless-stopped
     user: "${PUID}:${PGID}"
